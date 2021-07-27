@@ -12,7 +12,7 @@ import paho.mqtt.client as paho
   
  	# Command line arguments
 parser = argparse.ArgumentParser(description='Fetches and outputs JBD bms data')
-parser.add_argument("-b", "--BLEaddress", help="Device BLE Address", default="a4:c1:38:1d:d6:5d" required=True)
+parser.add_argument("-b", "--BLEaddress", help="Device BLE Address", default="a4:c1:38:1d:d6:5d", required=True)
 parser.add_argument("-i", "--interval", type=int, help="Data fetch interval", default=60, required=True)
 parser.add_argument("-m", "--meter", help="meter name", default="jbdbms", required=True)
 args = parser.parse_args() 
