@@ -55,7 +55,7 @@ def cellinfo1(data):			# process pack info
 		"cycles": cycles 
 	}
 	ret = mqtt.publish(gauge, payload=json.dumps(message1), qos=0, retain=False) # not sending mdate (manufacture date)
-	logging.debug(f"cellinfo1 - message1: {message1}")    
+	logging.debug(f"current battery info: {message1}")    
 	bal1 = (format(balance1, "b").zfill(16))		
 	message2 = {
 		"meter": "bms",							# using balance1 bits for 16 cells
@@ -77,7 +77,7 @@ def cellinfo1(data):			# process pack info
 		"c01" : int(bal1[15:16])
 	}
 	ret = mqtt.publish(gauge, payload=json.dumps(message2), qos=0, retain=False)
-	logging.debug(f"cellinfo1 - message2: {message2}")
+	logging.debug(f"balancing status: {message2}")
 def cellinfo2(data):
 	infodata = data  
 	i = 0                          # unpack into variables, ignore end of message byte '77'
@@ -102,7 +102,7 @@ def cellinfo2(data):
 		"cnf" : int(prt[12:13])	    # config problem
 	}
 	ret = mqtt.publish(topic, payload=json.dumps(message1), qos=0, retain=False)
-	logging.debug(f"cellinfo2 - message1: {message1}")
+	logging.debug(f"alarm statuses: {message1}")
 	message2 = {
 		"meter": "bms",
 		"protect": protect,
@@ -113,7 +113,7 @@ def cellinfo2(data):
 		"temp2": temp2
 	}
 	ret = mqtt.publish(topic, payload=json.dumps(message2), qos=0, retain=False)    # not sending version number or number of temp sensors
-	logging.debug(f"cellinfo2 - message2: {message2}")
+	logging.debug(f"basic BMS current condition info: {message2}")
 def cellvolts1(data):			# process cell voltages
 	global cells1
 	celldata = data             # Unpack into variables, skipping header bytes 0-3
@@ -132,7 +132,7 @@ def cellvolts1(data):			# process cell voltages
 		"cell8": cell8 
 	}
 	ret = mqtt.publish(gauge, payload=json.dumps(message), qos=0, retain=False)
-	logging.debug(f"cellvolts1 - message: {message}")
+	logging.debug(f"cell voltages: {message}")
 	cellsmin = min(cells1)          # min, max, delta
 	cellsmax = max(cells1)
 	delta = cellsmax-cellsmin
