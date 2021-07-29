@@ -9,15 +9,23 @@ import time
 import binascii
 import atexit
 import paho.mqtt.client as paho
+import logging
+import sys
   
  	# Command line arguments
 parser = argparse.ArgumentParser(description='Fetches and outputs JBD bms data')
 parser.add_argument("-b", "--BLEaddress", help="Device BLE Address", default="a4:c1:38:1d:d6:5d", required=False)
 parser.add_argument("-i", "--interval", type=int, help="Data fetch interval", default=60, required=False)
 parser.add_argument("-m", "--meter", help="meter name", default="jbdbms", required=False)
+parser.add_argument("-v", '--verbose', help='Enable verbose output to stdout', default=False, action='store_true')
 args = parser.parse_args() 
 z = args.interval
-meter = args.meter	
+meter = args.meter
+
+if args.verbose:
+	logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+else:
+	logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 topic ="data/bms"
 gauge ="data/bms/gauge"
@@ -25,121 +33,122 @@ broker="mqtt"
 port=1883
 
 def disconnect():
-    mqtt.disconnect()
-    print("broker disconnected")
+	mqtt.disconnect()
+	logging.info("broker disconnected")
 
 def cellinfo1(data):			# process pack info
-    infodata = data
-    i = 4                       # Unpack into variables, skipping header bytes 0-3
-    volts, amps, remain, capacity, cycles, mdate, balance1, balance2 = struct.unpack_from('>HhHHHHHH', infodata, i)
-    volts=volts/100
-    amps = amps/100
-    capacity = capacity/100
-    remain = remain/100
-    watts = volts*amps  							# adding watts field for dbase
-    message1 = {
-        "meter": "bms",
-        "volts": volts,
-        "amps": amps,
-        "watts": watts, 
-        "remain": remain, 
-        "capacity": capacity, 
-        "cycles": cycles 
-    }
-    ret = mqtt.publish(gauge, payload=json.dumps(message1), qos=0, retain=False) # not sending mdate (manufacture date)
-    print(f"cellinfo1 - message1: {message1}")    
-    bal1 = (format(balance1, "b").zfill(16))		
-    message2 = {
-        "meter": "bms",							# using balance1 bits for 16 cells
-        "c16" : int(bal1[0:1]), 
-        "c15" : int(bal1[1:2]),                 # balance2 is for next 17-32 cells - not using
-        "c14" : int(bal1[2:3]), 							
-        "c13" : int(bal1[3:4]), 
-        "c12" : int(bal1[4:5]), 				# bit shows (0,1) charging on-off			
-        "c11" : int(bal1[5:6]), 
-        "c10" : int(bal1[6:7]), 
-        "c09" : int(bal1[7:8]), 
-        "c08" : int(bal1[8:9]), 
-        "c07" : int(bal1[9:10]), 
-        "c06" : int(bal1[10:11]), 		
-        "c05" : int(bal1[11:12]), 
-        "c04" : int(bal1[12:13]) , 
-        "c03" : int(bal1[13:14]), 
-        "c02" : int(bal1[14:15]), 
-        "c01" : int(bal1[15:16])
-    }
-    ret = mqtt.publish(gauge, payload=json.dumps(message2), qos=0, retain=False)
-    #print(f"cellinfo1 - message2: {message2}")
+	infodata = data
+	i = 4                       # Unpack into variables, skipping header bytes 0-3
+	volts, amps, remain, capacity, cycles, mdate, balance1, balance2 = struct.unpack_from('>HhHHHHHH', infodata, i)
+	volts=volts/100
+	amps = amps/100
+	capacity = capacity/100
+	remain = remain/100
+	watts = volts*amps  							# adding watts field for dbase
+	message1 = {
+		"meter": "bms",
+		"volts": volts,
+		"amps": amps,
+		"watts": watts, 
+		"remain": remain, 
+		"capacity": capacity, 
+		"cycles": cycles 
+	}
+	ret = mqtt.publish(gauge, payload=json.dumps(message1), qos=0, retain=False) # not sending mdate (manufacture date)
+	logging.debug(f"cellinfo1 - message1: {message1}")    
+	bal1 = (format(balance1, "b").zfill(16))		
+	message2 = {
+		"meter": "bms",							# using balance1 bits for 16 cells
+		"c16" : int(bal1[0:1]), 
+		"c15" : int(bal1[1:2]),                 # balance2 is for next 17-32 cells - not using
+		"c14" : int(bal1[2:3]), 							
+		"c13" : int(bal1[3:4]), 
+		"c12" : int(bal1[4:5]), 				# bit shows (0,1) charging on-off			
+		"c11" : int(bal1[5:6]), 
+		"c10" : int(bal1[6:7]), 
+		"c09" : int(bal1[7:8]), 
+		"c08" : int(bal1[8:9]), 
+		"c07" : int(bal1[9:10]), 
+		"c06" : int(bal1[10:11]), 		
+		"c05" : int(bal1[11:12]), 
+		"c04" : int(bal1[12:13]) , 
+		"c03" : int(bal1[13:14]), 
+		"c02" : int(bal1[14:15]), 
+		"c01" : int(bal1[15:16])
+	}
+	ret = mqtt.publish(gauge, payload=json.dumps(message2), qos=0, retain=False)
+	logging.debug(f"cellinfo1 - message2: {message2}")
 def cellinfo2(data):
-    infodata = data  
-    i = 0                          # unpack into variables, ignore end of message byte '77'
-    protect,vers,percent,fet,cells,sensors,temp1,temp2,b77 = struct.unpack_from('>HBBBBBHHB', infodata, i)
-    temp1 = (temp1-2731)/10
-    temp2 = (temp2-2731)/10			# fet 0011 = 3 both on ; 0010 = 2 disch on ; 0001 = 1 chrg on ; 0000 = 0 both off
-    prt = (format(protect, "b").zfill(16))		# protect trigger (0,1)(off,on)
-    message1 = {
-        "meter": "bms",
-        "ovp" : int(prt[0:1]), 			# overvoltage
-        "uvp" : int(prt[1:2]), 			# undervoltage
-        "bov" : int(prt[2:3]), 		# pack overvoltage
-        "buv" : int(prt[3:4]),			# pack undervoltage 
-        "cot" : int(prt[4:5]),		# current over temp
-        "cut" : int(prt[5:6]),			# current under temp
-        "dot" : int(prt[6:7]),			# discharge over temp
-        "dut" : int(prt[7:8]),			# discharge under temp
-        "coc" : int(prt[8:9]),		# charge over current
-        "duc" : int(prt[9:10]),		# discharge under current
-        "sc" : int(prt[10:11]),		# short circuit
-        "ic" : int(prt[11:12]),        # ic failure
-        "cnf" : int(prt[12:13])	    # config problem
-    }
-    ret = mqtt.publish(topic, payload=json.dumps(message1), qos=0, retain=False)
-    #print(f"cellinfo2 - message1: {message1}")
-    message2 = {
-        "meter": "bms",
-        "protect": protect,
-        "percent": percent,
-        "fet": fet,
-        "cells": cells,
-        "temp1": temp1,
-        "temp2": temp2
-    }
-    ret = mqtt.publish(topic, payload=json.dumps(message2), qos=0, retain=False)    # not sending version number or number of temp sensors
-    print(f"cellinfo2 - message2: {message2}")
+	infodata = data  
+	i = 0                          # unpack into variables, ignore end of message byte '77'
+	protect,vers,percent,fet,cells,sensors,temp1,temp2,b77 = struct.unpack_from('>HBBBBBHHB', infodata, i)
+	temp1 = (temp1-2731)/10
+	temp2 = (temp2-2731)/10			# fet 0011 = 3 both on ; 0010 = 2 disch on ; 0001 = 1 chrg on ; 0000 = 0 both off
+	prt = (format(protect, "b").zfill(16))		# protect trigger (0,1)(off,on)
+	message1 = {
+		"meter": "bms",
+		"ovp" : int(prt[0:1]), 			# overvoltage
+		"uvp" : int(prt[1:2]), 			# undervoltage
+		"bov" : int(prt[2:3]), 		# pack overvoltage
+		"buv" : int(prt[3:4]),			# pack undervoltage 
+		"cot" : int(prt[4:5]),		# current over temp
+		"cut" : int(prt[5:6]),			# current under temp
+		"dot" : int(prt[6:7]),			# discharge over temp
+		"dut" : int(prt[7:8]),			# discharge under temp
+		"coc" : int(prt[8:9]),		# charge over current
+		"duc" : int(prt[9:10]),		# discharge under current
+		"sc" : int(prt[10:11]),		# short circuit
+		"ic" : int(prt[11:12]),        # ic failure
+		"cnf" : int(prt[12:13])	    # config problem
+	}
+	ret = mqtt.publish(topic, payload=json.dumps(message1), qos=0, retain=False)
+	logging.debug(f"cellinfo2 - message1: {message1}")
+	message2 = {
+		"meter": "bms",
+		"protect": protect,
+		"percent": percent,
+		"fet": fet,
+		"cells": cells,
+		"temp1": temp1,
+		"temp2": temp2
+	}
+	ret = mqtt.publish(topic, payload=json.dumps(message2), qos=0, retain=False)    # not sending version number or number of temp sensors
+	logging.debug(f"cellinfo2 - message2: {message2}")
 def cellvolts1(data):			# process cell voltages
-    global cells1
-    celldata = data             # Unpack into variables, skipping header bytes 0-3
-    i = 4
-    cell1, cell2, cell3, cell4, cell5, cell6, cell7, cell8 = struct.unpack_from('>HHHHHHHH', celldata, i)
-    cells1 = [cell1, cell2, cell3, cell4, cell5, cell6, cell7, cell8] 	# needed for max, min, delta calculations
-    message = {
-        "meter" : "bms", 
-        "cell1": cell1, 
-        "cell2": cell2,
-        "cell3": cell3, 
-        "cell4": cell4,
-        "cell5": cell5, 
-        "cell6": cell6, 
-        "cell7": cell7, 
-        "cell8": cell8 
-    }
-    ret = mqtt.publish(gauge, payload=json.dumps(message), qos=0, retain=False)
-    print(f"cellvolts1 - message: {message}")
-    cellsmin = min(cells1)          # min, max, delta
-    cellsmax = max(cells1)
-    delta = cellsmax-cellsmin
-    mincell = (cells1.index(min(cells1))+1)
-    maxcell = (cells1.index(max(cells1))+1)
-    message1 = {
-        "meter": meter,
-        "mincell": mincell,
-        "cellsmin": cellsmin,
-        "maxcell": maxcell,
-        "cellsmax": cellsmax,
-        "delta": delta
-    }
-    ret = mqtt.publish(gauge, payload=json.dumps(message1), qos=0, retain=False)
-    #print(f"cellvolts1 - message1: {message1}")
+	global cells1
+	celldata = data             # Unpack into variables, skipping header bytes 0-3
+	i = 4
+	cell1, cell2, cell3, cell4, cell5, cell6, cell7, cell8 = struct.unpack_from('>HHHHHHHH', celldata, i)
+	cells1 = [cell1, cell2, cell3, cell4, cell5, cell6, cell7, cell8] 	# needed for max, min, delta calculations
+	message = {
+		"meter" : "bms", 
+		"cell1": cell1, 
+		"cell2": cell2,
+		"cell3": cell3, 
+		"cell4": cell4,
+		"cell5": cell5, 
+		"cell6": cell6, 
+		"cell7": cell7, 
+		"cell8": cell8 
+	}
+	ret = mqtt.publish(gauge, payload=json.dumps(message), qos=0, retain=False)
+	logging.debug(f"cellvolts1 - message: {message}")
+	cellsmin = min(cells1)          # min, max, delta
+	cellsmax = max(cells1)
+	delta = cellsmax-cellsmin
+	mincell = (cells1.index(min(cells1))+1)
+	maxcell = (cells1.index(max(cells1))+1)
+	message1 = {
+		"meter": meter,
+		"mincell": mincell,
+		"cellsmin": cellsmin,
+		"maxcell": maxcell,
+		"cellsmax": cellsmax,
+		"delta": delta
+	}
+	ret = mqtt.publish(gauge, payload=json.dumps(message1), qos=0, retain=False)
+	#really don't need this data. it can be inferred from other messages
+	#print(f"cellvolts1 - message1: {message1}")
 class MyDelegate(DefaultDelegate):		    # notification responses
 	def __init__(self):
 		DefaultDelegate.__init__(self)
@@ -153,17 +162,19 @@ class MyDelegate(DefaultDelegate):		    # notification responses
 		elif text_string.find('77') != -1 and len(text_string) == 28 or len(text_string) == 36:	 # x03
 			cellinfo2(data)		
 try:
-    print('attempting to connect')		
-    bms = Peripheral(args.BLEaddress,addrType="public")
+	logging.info("starting MPP BMS monitoring")
+	logging.info(f"attempting to connect to BLE device {args.BLEaddress}")		
+	bms = Peripheral(args.BLEaddress,addrType="public")
 except BTLEException as ex:
-    time.sleep(10)
-    print('2nd try connect')
-    bms = Peripheral(args.BLEaddress,addrType="public")
+	logging.warn("unable to connect. waiting 10 seconds and trying again.")
+	time.sleep(10)
+	logging.warn(f"attempting to connect again to BLE device {args.BLEaddress}")
+	bms = Peripheral(args.BLEaddress,addrType="public")
 except BTLEException as ex:
-    print('cannot connect')
-    exit()
+	logging.critical("unable to connect to BLE device, exiting")
+	exit()
 else:
-    print('connected ',args.BLEaddress)
+	logging.info(f"connected to {args.BLEaddress}")
 
 atexit.register(disconnect)
 mqtt = paho.Client("control3")      #create and connect mqtt client
