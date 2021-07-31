@@ -40,7 +40,7 @@ class InfluxStore(MessageStore):
 	logger = logging.getLogger("forwarder.InfluxStore")
 
 	def __init__(self, host, port, username, password_file, database):
-		password = open(password_file).read().strip()
+		password = "power" #open(password_file).read().strip()
 		self.influx_client = InfluxDBClient(
 			host=host, port=port, username=username, password=password, database=database)
 		# influx_client.create_database('sensors')
@@ -103,7 +103,7 @@ class MQTTSource(MessageSource):
 			# subscribe to /node_name/wildcard
 			#for node_name in self.node_names:
 			# topic = "{node_name}/#".format(node_name=node_name)
-			topic = "get_status/status/#"
+			topic = "JBD-BMS/#"
 			self.logger.info("Subscribing to topic %s", topic)
 			client.subscribe(topic)
 
@@ -119,10 +119,10 @@ class MQTTSource(MessageSource):
 				if isFloat(decoded_value):
 					str_value = convertToFloat(decoded_value)
 					for store in self.stores:
-						store.store_msg("power_measurement",measurement,str_value)
+						store.store_msg("BMS",measurement,str_value)
 				else:
 					for store in self.stores:
-						store.store_msg("power_measurement_strings",measurement,decoded_value)
+						store.store_msg("BMS_strings",measurement,decoded_value)
 
 
 			
@@ -151,7 +151,7 @@ def main():
 	parser.add_argument('--influx-user', default="power", help='InfluxDB username')
 	parser.add_argument('--influx-pass-file', default="pass.file", help='InfluxDB password file')
 	parser.add_argument('--influx-db', default="power", help='InfluxDB database')
-	parser.add_argument('--node-name', default='get_status', help='Sensor node name', action="append")
+	parser.add_argument('--node-name', default='JDB-BMS', help='Sensor node name', action="append")
 	parser.add_argument('--stringify-values-for-measurements', required=False,	help='Force str() on measurements of the given name', action="append")
 	parser.add_argument('--verbose', help='Enable verbose output to stdout', default=True, action='store_true')
 	args = parser.parse_args()
@@ -172,5 +172,5 @@ def main():
 	print("start")
 	source.start()
 
-if __name__ == '__main__':
-	main()
+#if __name__ == '__main__':
+main()

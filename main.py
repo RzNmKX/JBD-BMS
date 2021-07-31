@@ -26,10 +26,11 @@ if args.verbose:
 else:
 	logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-main_topic = "JDB-BMS/"
+main_topic = "JBD-BMS/"
 gauge ="data/bms/cell_info"
 broker="mqtt"
 meter_name = "bms"
+meter = meter_name
 port=1883
 
 def disconnect():
@@ -146,7 +147,7 @@ def cellvolts1(data):			# process cell voltages
 	mincell = (cells1.index(min(cells1))+1)
 	maxcell = (cells1.index(max(cells1))+1)
 	message1 = {
-		"meter": meter,
+		"meter": meter_name,
 		"mincell": mincell,
 		"cellsmin": cellsmin,
 		"maxcell": maxcell,
