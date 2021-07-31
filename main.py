@@ -27,7 +27,8 @@ z = args.interval
 meter = args.meter
 print("done parsing args")
 
-
+for arg in args:
+	print(f"{arg}")
 if args.verbose:
 	logging.info("verbose mode activated")
 	logging.basicConfig(level=logging.DEBUG)
