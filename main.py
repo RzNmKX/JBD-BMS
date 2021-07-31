@@ -37,16 +37,16 @@ def disconnect():
 	mqtt.disconnect()
 	logging.info("broker disconnected")
 
-def cellinfo1(data):			# process pack info
+def cellinfo1(data): # process pack info
 	infodata = data
-	i = 4                       # Unpack into variables, skipping header bytes 0-3
+	i = 4 # Unpack into variables, skipping header bytes 0-3
 	volts, amps, remain, capacity, cycles, mdate, balance1, balance2 = struct.unpack_from('>HhHHHHHH', infodata, i)
 	volts=volts/100
 	amps = amps/100
 	capacity = capacity/100
 	remain = remain/100
 	watts = volts*amps
-	message = []							# adding watts field for dbase
+	message = ()
 	message["meter"] = meter_name
 	message["volts"] = volts
 	message["amps"] = amps
