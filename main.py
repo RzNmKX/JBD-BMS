@@ -30,10 +30,10 @@ print("done parsing args")
 
 if args.verbose:
 	logging.info("verbose mode activated")
-	logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+	logging.basicConfig(level=logging.DEBUG)
 else:
 	print("verbose not specified - logging set to info")
-	logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+	logging.basicConfig(level=logging.INFO)
 
 main_topic = "JBD-BMS/"
 gauge ="data/bms/cell_info"
