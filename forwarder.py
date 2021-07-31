@@ -29,7 +29,6 @@ import logging
 import sys
 import requests.exceptions
 
-
 class MessageStore(object):
 
 	def store_msg(self, node_name, measurement_name, value):
@@ -43,7 +42,7 @@ class InfluxStore(MessageStore):
 		password = "power" #open(password_file).read().strip()
 		self.influx_client = InfluxDBClient(
 			host=host, port=port, username=username, password=password, database=database)
-		# influx_client.create_database('sensors')
+		self.influx_client.create_database(database)
 
 
 	def store_msg(self, database, sensor, value):
@@ -110,23 +109,17 @@ class MQTTSource(MessageSource):
 		def on_message(client, userdata, msg):
 			self.logger.debug("Received MQTT message for topic %s with payload %s", msg.topic, msg.payload)
 			list_of_topics = msg.topic.split('/')
-			measurement = list_of_topics[2]
+			measurement = list_of_topics[1]
 			if list_of_topics[len(list_of_topics)-1] == 'unit':
 				value = None
 			else:
-				value = msg.payload
-				decoded_value = value.decode('UTF-8')
-				if isFloat(decoded_value):
-					str_value = convertToFloat(decoded_value)
-					for store in self.stores:
-						store.store_msg("BMS",measurement,str_value)
-				else:
-					for store in self.stores:
-						store.store_msg("BMS_strings",measurement,decoded_value)
-
-
-			
-
+				decoded_payload = msg.payload.decode('UTF-8')
+				decoded_json = json.loads(decoded_payload)
+				for key in decoded_json:
+					if isFloat(decoded_json[key]):
+						for store in self.stores:
+							#print(f"about to write {measurement}---{key}---{float(decoded_json[key])}")
+							store.store_msg(measurement,key,float(decoded_json[key])	)
 
 		self.client.on_connect = on_connect
 		self.client.on_message = on_message
@@ -157,9 +150,9 @@ def main():
 	args = parser.parse_args()
 
 	if args.verbose:
-		logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+		logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", stream=sys.stdout, level=logging.DEBUG)
 	else:
-		logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+		logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", stream=sys.stdout, level=logging.INFO)
 		
 	print("creating influxstore")
 	store = InfluxStore(host=args.influx_host, port=args.influx_port, username=args.influx_user, password_file=args.influx_pass_file, database=args.influx_db)

@@ -12,7 +12,6 @@ import paho.mqtt.client as paho
 import logging
 import sys
 print("done with imports, setting logging")
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
 
 logging.info("starting BMS monitoring")
 logging.debug("parsing arguments")
@@ -30,10 +29,10 @@ print("done parsing args")
 if args.verbose:
 	print("verbose")
 	logging.info("verbose mode activated")
-	logging.basicConfig(level=logging.DEBUG)
+	logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", level=logging.DEBUG)
 else:
 	print("verbose not specified - logging set to info")
-	logging.basicConfig(level=logging.INFO)
+	logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", level=logging.INFO)
 
 main_topic = "JBD-BMS/"
 gauge ="data/bms/cell_info"
