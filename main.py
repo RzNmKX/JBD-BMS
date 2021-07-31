@@ -12,7 +12,6 @@ import paho.mqtt.client as paho
 import logging
 import sys
   
- 	# Command line arguments
 parser = argparse.ArgumentParser(description='Fetches and outputs JBD bms data')
 parser.add_argument("-b", "--BLEaddress", help="Device BLE Address", default="a4:c1:38:1d:d6:5d", required=False)
 parser.add_argument("-i", "--interval", type=int, help="Data fetch interval", default=60, required=False)
@@ -27,9 +26,10 @@ if args.verbose:
 else:
 	logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-topic ="data/bms"
-gauge ="data/bms/gauge"
+topic ="data/bms/bms_info"
+gauge ="data/bms/cell_info"
 broker="mqtt"
+meter_name = "bms"
 port=1883
 
 def disconnect():
@@ -46,7 +46,7 @@ def cellinfo1(data):			# process pack info
 	remain = remain/100
 	watts = volts*amps  							# adding watts field for dbase
 	message1 = {
-		"meter": "bms",
+		"meter": meter_name,
 		"volts": volts,
 		"amps": amps,
 		"watts": watts, 
@@ -58,7 +58,7 @@ def cellinfo1(data):			# process pack info
 	logging.debug(f"current battery info: {message1}")    
 	bal1 = (format(balance1, "b").zfill(16))		
 	message2 = {
-		"meter": "bms",							# using balance1 bits for 16 cells
+		"meter": meter_name,							# using balance1 bits for 16 cells
 		"c16" : int(bal1[0:1]), 
 		"c15" : int(bal1[1:2]),                 # balance2 is for next 17-32 cells - not using
 		"c14" : int(bal1[2:3]), 							
@@ -86,7 +86,7 @@ def cellinfo2(data):
 	temp2 = (temp2-2731)/10			# fet 0011 = 3 both on ; 0010 = 2 disch on ; 0001 = 1 chrg on ; 0000 = 0 both off
 	prt = (format(protect, "b").zfill(16))		# protect trigger (0,1)(off,on)
 	message1 = {
-		"meter": "bms",
+		"meter": meter_name,
 		"ovp" : int(prt[0:1]), 			# overvoltage
 		"uvp" : int(prt[1:2]), 			# undervoltage
 		"bov" : int(prt[2:3]), 		# pack overvoltage
@@ -104,7 +104,7 @@ def cellinfo2(data):
 	ret = mqtt.publish(topic, payload=json.dumps(message1), qos=0, retain=False)
 	logging.debug(f"alarm statuses: {message1}")
 	message2 = {
-		"meter": "bms",
+		"meter": meter_name,
 		"protect": protect,
 		"percent": percent,
 		"fet": fet,
@@ -121,7 +121,7 @@ def cellvolts1(data):			# process cell voltages
 	cell1, cell2, cell3, cell4, cell5, cell6, cell7, cell8 = struct.unpack_from('>HHHHHHHH', celldata, i)
 	cells1 = [cell1, cell2, cell3, cell4, cell5, cell6, cell7, cell8] 	# needed for max, min, delta calculations
 	message = {
-		"meter" : "bms", 
+		"meter" : meter_name, 
 		"cell1": cell1, 
 		"cell2": cell2,
 		"cell3": cell3, 
