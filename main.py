@@ -26,7 +26,7 @@ if args.verbose:
 else:
 	logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-topic ="data/bms/bms_info"
+main_topic = "JDB-BMS/"
 gauge ="data/bms/cell_info"
 broker="mqtt"
 meter_name = "bms"
@@ -54,7 +54,8 @@ def cellinfo1(data):			# process pack info
 		"capacity": capacity, 
 		"cycles": cycles 
 	}
-	ret = mqtt.publish(gauge, payload=json.dumps(message1), qos=0, retain=False) # not sending mdate (manufacture date)
+	sub_topic = "battery_summary"
+	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message1), qos=0, retain=False)
 	logging.debug(f"current battery info: {message1}")    
 	bal1 = (format(balance1, "b").zfill(16))		
 	message2 = {
@@ -76,7 +77,8 @@ def cellinfo1(data):			# process pack info
 		"c02" : int(bal1[14:15]), 
 		"c01" : int(bal1[15:16])
 	}
-	ret = mqtt.publish(gauge, payload=json.dumps(message2), qos=0, retain=False)
+	sub_topic = "balancing_status"
+	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message2), qos=0, retain=False)
 	logging.debug(f"balancing status: {message2}")
 def cellinfo2(data):
 	infodata = data  
@@ -101,7 +103,8 @@ def cellinfo2(data):
 		"ic" : int(prt[11:12]),        # ic failure
 		"cnf" : int(prt[12:13])	    # config problem
 	}
-	ret = mqtt.publish(topic, payload=json.dumps(message1), qos=0, retain=False)
+	sub_topic = "bms_alarms"
+	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message1), qos=0, retain=False)
 	logging.debug(f"alarm statuses: {message1}")
 	message2 = {
 		"meter": meter_name,
@@ -112,7 +115,8 @@ def cellinfo2(data):
 		"temp1": temp1,
 		"temp2": temp2
 	}
-	ret = mqtt.publish(topic, payload=json.dumps(message2), qos=0, retain=False)    # not sending version number or number of temp sensors
+	sub_topic = "basic_info"
+	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message2), qos=0, retain=False)    # not sending version number or number of temp sensors
 	logging.debug(f"basic BMS current condition info: {message2}")
 def cellvolts1(data):			# process cell voltages
 	global cells1
@@ -131,7 +135,8 @@ def cellvolts1(data):			# process cell voltages
 		"cell7": cell7, 
 		"cell8": cell8 
 	}
-	ret = mqtt.publish(gauge, payload=json.dumps(message), qos=0, retain=False)
+	sub_topic = "cell_voltages"
+	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message), qos=0, retain=False)
 	logging.debug(f"cell voltages: {message}")
 	cellsmin = min(cells1)          # min, max, delta
 	cellsmax = max(cells1)
@@ -146,8 +151,9 @@ def cellvolts1(data):			# process cell voltages
 		"cellsmax": cellsmax,
 		"delta": delta
 	}
-	ret = mqtt.publish(gauge, payload=json.dumps(message1), qos=0, retain=False)
+	sub_topic = "cell_voltage_summary"
 	#really don't need this data. it can be inferred from other messages
+	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message1), qos=0, retain=False)
 	#print(f"cellvolts1 - message1: {message1}")
 class MyDelegate(DefaultDelegate):		    # notification responses
 	def __init__(self):
