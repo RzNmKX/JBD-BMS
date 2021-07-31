@@ -191,7 +191,6 @@ class MyDelegate(DefaultDelegate):		    # notification responses
 		elif text_string.find('77') != -1 and len(text_string) == 28 or len(text_string) == 36:	 # x03
 			cellinfo2(data)
 
-bms = None
 try:
 	logging.info("starting MPP BMS monitoring")
 	logging.info(f"attempting to connect to BLE device {args.BLEaddress}")		
