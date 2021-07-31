@@ -11,10 +11,6 @@ import atexit
 import paho.mqtt.client as paho
 import logging
 import sys
-print("done with imports, setting logging")
-
-logging.info("starting BMS monitoring")
-logging.debug("parsing arguments")
 
 parser = argparse.ArgumentParser(description='Fetches and outputs JBD bms data')
 parser.add_argument("-b", "--BLEaddress", help="Device BLE Address", default="a4:c1:38:1d:d6:5d", required=False)
@@ -24,15 +20,11 @@ parser.add_argument("-v", '--verbose', help='Enable verbose output to stdout', d
 args = parser.parse_args() 
 z = args.interval
 meter = args.meter
-print("done parsing args")
 
 if args.verbose:
-	print("verbose")
-	logging.info("verbose mode activated")
-	logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", level=logging.DEBUG)
+	logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", stream=sys.stdout, level=logging.DEBUG)
 else:
-	print("verbose not specified - logging set to info")
-	logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", level=logging.INFO)
+	logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", stream=sys.stdout, level=logging.INFO)
 
 main_topic = "JBD-BMS/"
 gauge ="data/bms/cell_info"
