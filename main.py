@@ -199,6 +199,8 @@ class MyDelegate(DefaultDelegate):		    # notification responses
 		elif text_string.find('77') != -1 and len(text_string) == 28 or len(text_string) == 36:	 # x03
 			cellinfo2(data)
 
+print("at the try")
+
 try:
 	logging.info("starting MPP BMS monitoring")
 	logging.info(f"attempting to connect to BLE device {args.BLEaddress}")		
@@ -224,6 +226,7 @@ bms.setDelegate(MyDelegate())
 	# write empty data to 0x15 for notification request   --  address x03 handle for info & x04 handle for cell voltage
 	# using waitForNotifications(5) as less than 5 seconds has caused some missed notifications
 while True:
+	print("iterate inside true loop")
 	result = bms.writeCharacteristic(0x15,b'\xdd\xa5\x03\x00\xff\xfd\x77',False)		# write x03 w/o response cell info
 	bms.waitForNotifications(5)
 	result = bms.writeCharacteristic(0x15,b'\xdd\xa5\x04\x00\xff\xfc\x77',False)		# write x04 w/o response cell voltages
