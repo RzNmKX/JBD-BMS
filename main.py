@@ -11,11 +11,12 @@ import atexit
 import paho.mqtt.client as paho
 import logging
 import sys
+print("done with imports, setting logging")
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
 
 logging.info("starting BMS monitoring")
 logging.debug("parsing arguments")
-  
+
 parser = argparse.ArgumentParser(description='Fetches and outputs JBD bms data')
 parser.add_argument("-b", "--BLEaddress", help="Device BLE Address", default="a4:c1:38:1d:d6:5d", required=False)
 parser.add_argument("-i", "--interval", type=int, help="Data fetch interval", default=60, required=False)
@@ -24,6 +25,8 @@ parser.add_argument("-v", '--verbose', help='Enable verbose output to stdout', d
 args = parser.parse_args() 
 z = args.interval
 meter = args.meter
+print("done parsing args")
+
 
 if args.verbose:
 	logging.info("verbose mode activated")
@@ -38,6 +41,8 @@ meter_name = "bms"
 meter = meter_name
 port=1883
 
+
+print("into the functions")
 def disconnect():
 	mqtt.disconnect()
 	logging.info("broker disconnected")
