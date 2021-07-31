@@ -24,6 +24,7 @@ meter = args.meter
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
 if args.verbose:
+	logging.info("verbose mode activated")
 	logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 else:
 	logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -38,6 +39,18 @@ port=1883
 def disconnect():
 	mqtt.disconnect()
 	logging.info("broker disconnected")
+
+def on_connect(client, userdata, flags, rc):
+    if rc==0:
+        client.connected_flag=True #set flag
+        print("connected OK")
+    else:
+        print("Bad connection Returned code=",rc)
+
+def on_disconnect(client, userdata, rc):
+    logging.info(f"MQTT disconnected with reason {rc}")
+    client.connected_flag=False
+    client.disconnect_flag=True
 
 def cellinfo1(data): # process pack info
 	infodata = data
@@ -60,9 +73,10 @@ def cellinfo1(data): # process pack info
 
 	sub_topic = "battery_summary"
 	combined_topic = main_topic + sub_topic
-	print(f"publishing to {combined_topic} payload {json.dumps(message1)}")
+	logging.debug(f"publishing to {combined_topic} payload {json.dumps(message1)}")
 	ret = mqtt.publish(combined_topic, payload=json.dumps(message1), qos=0, retain=False)
 	logging.debug(f"current battery info: {message1}")    
+	
 	bal1 = (format(balance1, "b").zfill(16))		
 	message2 = {
 		"meter": meter_name,							# using balance1 bits for 16 cells
@@ -86,6 +100,7 @@ def cellinfo1(data): # process pack info
 	sub_topic = "balancing_status"
 	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message2), qos=0, retain=False)
 	logging.debug(f"balancing status: {message2}")
+
 def cellinfo2(data):
 	infodata = data  
 	i = 0                          # unpack into variables, ignore end of message byte '77'
@@ -124,6 +139,7 @@ def cellinfo2(data):
 	sub_topic = "basic_info"
 	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message2), qos=0, retain=False)    # not sending version number or number of temp sensors
 	logging.debug(f"basic BMS current condition info: {message2}")
+
 def cellvolts1(data):			# process cell voltages
 	global cells1
 	celldata = data             # Unpack into variables, skipping header bytes 0-3
@@ -161,6 +177,7 @@ def cellvolts1(data):			# process cell voltages
 	#really don't need this data. it can be inferred from other messages
 	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message1), qos=0, retain=False)
 	#print(f"cellvolts1 - message1: {message1}")
+
 class MyDelegate(DefaultDelegate):		    # notification responses
 	def __init__(self):
 		DefaultDelegate.__init__(self)
@@ -172,15 +189,17 @@ class MyDelegate(DefaultDelegate):		    # notification responses
 		elif text_string.find('dd03') != -1:                             # x03
 			cellinfo1(data)
 		elif text_string.find('77') != -1 and len(text_string) == 28 or len(text_string) == 36:	 # x03
-			cellinfo2(data)		
+			cellinfo2(data)
+
+bms = None
 try:
 	logging.info("starting MPP BMS monitoring")
 	logging.info(f"attempting to connect to BLE device {args.BLEaddress}")		
 	bms = Peripheral(args.BLEaddress,addrType="public")
 except BTLEException as ex:
-	logging.warn("unable to connect. waiting 10 seconds and trying again.")
+	logging.warning("unable to connect. waiting 10 seconds and trying again.")
 	time.sleep(10)
-	logging.warn(f"attempting to connect again to BLE device {args.BLEaddress}")
+	logging.warning(f"attempting to connect again to BLE device {args.BLEaddress}")
 	bms = Peripheral(args.BLEaddress,addrType="public")
 except BTLEException as ex:
 	logging.critical("unable to connect to BLE device, exiting")
@@ -189,9 +208,11 @@ else:
 	logging.info(f"connected to {args.BLEaddress}")
 
 atexit.register(disconnect)
-mqtt = paho.Client("control3")      #create and connect mqtt client
+mqtt = paho.Client()
+mqtt.on_connect = on_connect
+mqtt.on_disconnect = on_disconnect
 mqtt.connect(broker,port)     
-bms.setDelegate(MyDelegate())		# setup bt delegate for notifications
+bms.setDelegate(MyDelegate())
 
 	# write empty data to 0x15 for notification request   --  address x03 handle for info & x04 handle for cell voltage
 	# using waitForNotifications(5) as less than 5 seconds has caused some missed notifications
