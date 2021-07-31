@@ -11,6 +11,10 @@ import atexit
 import paho.mqtt.client as paho
 import logging
 import sys
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
+
+logging.info("starting BMS monitoring")
+logging.debug("parsing arguments")
   
 parser = argparse.ArgumentParser(description='Fetches and outputs JBD bms data')
 parser.add_argument("-b", "--BLEaddress", help="Device BLE Address", default="a4:c1:38:1d:d6:5d", required=False)
@@ -21,8 +25,6 @@ args = parser.parse_args()
 z = args.interval
 meter = args.meter
 
-
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
 if args.verbose:
 	logging.info("verbose mode activated")
 	logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
