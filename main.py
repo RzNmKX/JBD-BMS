@@ -46,19 +46,20 @@ def cellinfo1(data): # process pack info
 	capacity = capacity/100
 	remain = remain/100
 	watts = volts*amps
-	message = ()
-	message["meter"] = meter_name
-	message["volts"] = volts
-	message["amps"] = amps
-	message["watts"] = watts
-	message["remain"] = remain 
-	message["capacity"] = capacity
-	message["cycles"] = cycles
+	message1 = {
+		"meter": meter_name,
+		"volts": volts,
+		"amps": amps,
+		"watts": watts, 
+		"remain": remain, 
+		"capacity": capacity, 
+		"cycles": cycles 
+	}
 
 	sub_topic = "battery_summary"
 	combined_topic = main_topic + sub_topic
-	print(f"publishing to {combined_topic} payload {json.dumps(message)}")
-	ret = mqtt.publish(combined_topic, payload=json.dumps(message), qos=0, retain=False)
+	print(f"publishing to {combined_topic} payload {json.dumps(message1)}")
+	ret = mqtt.publish(combined_topic, payload=json.dumps(message1), qos=0, retain=False)
 	logging.debug(f"current battery info: {message1}")    
 	bal1 = (format(balance1, "b").zfill(16))		
 	message2 = {
