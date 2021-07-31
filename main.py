@@ -55,7 +55,9 @@ def cellinfo1(data):			# process pack info
 		"cycles": cycles 
 	}
 	sub_topic = "battery_summary"
-	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message1), qos=0, retain=False)
+	combined_topic = main_topic + sub_topic
+	print(f"publishing to {combined_topic} payload {json.dumps(message1)}")
+	ret = mqtt.publish(combined_topic, payload=json.dumps(message1), qos=0, retain=False)
 	logging.debug(f"current battery info: {message1}")    
 	bal1 = (format(balance1, "b").zfill(16))		
 	message2 = {
