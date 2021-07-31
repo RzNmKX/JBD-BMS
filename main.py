@@ -32,6 +32,7 @@ if args.verbose:
 	logging.info("verbose mode activated")
 	logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 else:
+	print("verbose not specified - logging set to info")
 	logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 main_topic = "JBD-BMS/"
