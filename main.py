@@ -11,6 +11,7 @@ import atexit
 import paho.mqtt.client as paho
 import logging
 import sys
+import os
 
 parser = argparse.ArgumentParser(description='Fetches and outputs JBD bms data')
 parser.add_argument("-b", "--BLEaddress", help="Device BLE Address", default="a4:c1:38:1d:d6:5d", required=False)
@@ -217,10 +218,18 @@ bms.setDelegate(MyDelegate())
 	# write empty data to 0x15 for notification request   --  address x03 handle for info & x04 handle for cell voltage
 	# using waitForNotifications(5) as less than 5 seconds has caused some missed notifications
 while True:
-	print("iterate inside true loop")
-	result = bms.writeCharacteristic(0x15,b'\xdd\xa5\x03\x00\xff\xfd\x77',False)		# write x03 w/o response cell info
-	bms.waitForNotifications(5)
-	result = bms.writeCharacteristic(0x15,b'\xdd\xa5\x04\x00\xff\xfc\x77',False)		# write x04 w/o response cell voltages
-	bms.waitForNotifications(5)
-	time.sleep(z)
+	try:
+		print("iterate inside true loop")
+		result = bms.writeCharacteristic(0x15,b'\xdd\xa5\x03\x00\xff\xfd\x77',False)		# write x03 w/o response cell info
+		bms.waitForNotifications(5)
+		result = bms.writeCharacteristic(0x15,b'\xdd\xa5\x04\x00\xff\xfc\x77',False)		# write x04 w/o response cell voltages
+		bms.waitForNotifications(5)
+		time.sleep(z)
+	except KeyboardInterrupt:
+		logging.error("keyboard interrupted")
+		try:
+			bms.disconnect()
+			sys.exit(0)
+		except SystemExit:
+			os._exit(0)
    
