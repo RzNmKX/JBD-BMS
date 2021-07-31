@@ -21,6 +21,8 @@ args = parser.parse_args()
 z = args.interval
 meter = args.meter
 
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
 if args.verbose:
 	logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 else:
