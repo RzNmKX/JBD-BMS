@@ -219,7 +219,7 @@ bms.setDelegate(MyDelegate())
 	# using waitForNotifications(5) as less than 5 seconds has caused some missed notifications
 while True:
 	try:
-		print("iterate inside true loop")
+		logging.info("polling for data")
 		result = bms.writeCharacteristic(0x15,b'\xdd\xa5\x03\x00\xff\xfd\x77',False)		# write x03 w/o response cell info
 		bms.waitForNotifications(5)
 		result = bms.writeCharacteristic(0x15,b'\xdd\xa5\x04\x00\xff\xfc\x77',False)		# write x04 w/o response cell voltages
@@ -231,5 +231,6 @@ while True:
 			bms.disconnect()
 			sys.exit(0)
 		except SystemExit:
+			logging.error("unsuccessful BMS bluetooth disconnect")
 			os._exit(0)
    
