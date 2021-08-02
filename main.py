@@ -226,8 +226,8 @@ while True:
 		bms.waitForNotifications(5)
 		time.sleep(z)
 	except KeyboardInterrupt:
-		logging.error("keyboard interrupted")
 		try:
+			logging.error("keyboard interrupt - disconnecting from BMS")
 			bms.disconnect()
 			sys.exit(0)
 		except SystemExit:
