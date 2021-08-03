@@ -48,7 +48,7 @@ def on_connect(client, userdata, flags, rc):
         print("Bad connection Returned code=",rc)
 
 def on_disconnect(client, userdata, rc):
-    logging.info(f"MQTT disconnected with reason {rc}")
+    logging.warn(f"MQTT disconnected with reason {rc}")
     client.connected_flag=False
     client.disconnect_flag=True
 
@@ -219,6 +219,8 @@ bms.setDelegate(MyDelegate())
 	# using waitForNotifications(5) as less than 5 seconds has caused some missed notifications
 while True:
 	try:
+		if mqtt.is_connected == False:
+			mqtt.connect()
 		logging.info("polling for data")
 		result = bms.writeCharacteristic(0x15,b'\xdd\xa5\x03\x00\xff\xfd\x77',False)		# write x03 w/o response cell info
 		bms.waitForNotifications(5)
