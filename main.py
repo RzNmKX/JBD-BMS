@@ -35,8 +35,6 @@ meter = meter_name
 port=1883
 mqtt_is_connected = 0
 
-
-print("into the functions")
 def disconnect():
 	client.disconnect()
 	logging.info("broker disconnected")
@@ -45,9 +43,9 @@ def on_connect(client, userdata, flags, rc):
 	if rc==0:
 		global mqtt_is_connected
 		mqtt_is_connected = 1
-		print("connected OK")
+		logging.info("connected OK")
 	else:
-		print("Bad connection attempt. Returned code=",rc)
+		logging.warning("Bad connection attempt. Returned code=",rc)
 
 def on_disconnect(client, userdata, rc):
 	logging.warning(f"MQTT disconnected with reason {rc}")
@@ -193,7 +191,6 @@ class MyDelegate(DefaultDelegate):		    # notification responses
 		elif text_string.find('77') != -1 and len(text_string) == 28 or len(text_string) == 36:	 # x03
 			cellinfo2(data)
 
-print("at the try")
 
 try:
 	logging.info("starting MPP BMS monitoring")
