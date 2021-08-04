@@ -215,13 +215,14 @@ client = mqtt.Client()
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.reconnect_delay_set(min_delay=1, max_delay=60)
-client.connect(host=broker,port=port, keepalive=29)     
+client.connect(host=broker,port=port, keepalive=29)   
 bms.setDelegate(MyDelegate())
 
 	# write empty data to 0x15 for notification request   --  address x03 handle for info & x04 handle for cell voltage
 	# using waitForNotifications(5) as less than 5 seconds has caused some missed notifications
 while True:
 	try:
+		logging.debug(f"mqtt status = {client.is_connected()}")
 		try:
 			if mqtt_is_connected == 0:
 				logging.warning("MQTT disconnected, attempting to reconnect")
