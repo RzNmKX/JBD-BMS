@@ -215,7 +215,7 @@ client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.reconnect_delay_set(min_delay=1, max_delay=60)
 client.connect(host=broker,port=port, keepalive=29)
-client.loop(0.1)
+client.loop_start()
 bms.setDelegate(MyDelegate())
 
 	# write empty data to 0x15 for notification request   --  address x03 handle for info & x04 handle for cell voltage
