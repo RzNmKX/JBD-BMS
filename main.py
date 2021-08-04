@@ -8,7 +8,7 @@ import json
 import time
 import binascii
 import atexit
-import paho.mqtt.client as paho
+import paho.mqtt.client as mqtt
 import logging
 import sys
 import os
@@ -33,24 +33,26 @@ broker="mqtt"
 meter_name = "bms"
 meter = meter_name
 port=1883
+mqtt_is_connected = 0
 
 
 print("into the functions")
 def disconnect():
-	mqtt.disconnect()
+	client.disconnect()
 	logging.info("broker disconnected")
 
 def on_connect(client, userdata, flags, rc):
-    if rc==0:
-        client.connected_flag=True #set flag
-        print("connected OK")
-    else:
-        print("Bad connection Returned code=",rc)
+	if rc==0:
+		global mqtt_is_connected
+		mqtt_is_connected = 1
+		print("connected OK")
+	else:
+		print("Bad connection attempt. Returned code=",rc)
 
 def on_disconnect(client, userdata, rc):
-    logging.warning(f"MQTT disconnected with reason {rc}")
-    client.connected_flag=False
-    client.disconnect_flag=True
+	logging.warning(f"MQTT disconnected with reason {rc}")
+	global mqtt_is_connected
+	mqtt_is_connected = 0	
 
 def cellinfo1(data): # process pack info
 	infodata = data
@@ -74,7 +76,7 @@ def cellinfo1(data): # process pack info
 	sub_topic = "battery_summary"
 	combined_topic = main_topic + sub_topic
 	logging.debug(f"publishing to {combined_topic} payload {json.dumps(message1)}")
-	ret = mqtt.publish(combined_topic, payload=json.dumps(message1), qos=0, retain=False)
+	ret = client.publish(combined_topic, payload=json.dumps(message1), qos=0, retain=False)
 	logging.debug(f"current battery info: {message1}")    
 	
 	bal1 = (format(balance1, "b").zfill(16))		
@@ -98,7 +100,7 @@ def cellinfo1(data): # process pack info
 		"c01" : int(bal1[15:16])
 	}
 	sub_topic = "balancing_status"
-	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message2), qos=0, retain=False)
+	ret = client.publish(main_topic + sub_topic, payload=json.dumps(message2), qos=0, retain=False)
 	logging.debug(f"balancing status: {message2}")
 
 def cellinfo2(data):
@@ -125,7 +127,7 @@ def cellinfo2(data):
 		"cnf" : int(prt[12:13])	    # config problem
 	}
 	sub_topic = "bms_alarms"
-	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message1), qos=0, retain=False)
+	ret = client.publish(main_topic + sub_topic, payload=json.dumps(message1), qos=0, retain=False)
 	logging.debug(f"alarm statuses: {message1}")
 	message2 = {
 		"meter": meter_name,
@@ -137,7 +139,7 @@ def cellinfo2(data):
 		"temp2": temp2
 	}
 	sub_topic = "basic_info"
-	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message2), qos=0, retain=False)    # not sending version number or number of temp sensors
+	ret = client.publish(main_topic + sub_topic, payload=json.dumps(message2), qos=0, retain=False)    # not sending version number or number of temp sensors
 	logging.debug(f"basic BMS current condition info: {message2}")
 
 def cellvolts1(data):			# process cell voltages
@@ -158,7 +160,7 @@ def cellvolts1(data):			# process cell voltages
 		"cell8": cell8 
 	}
 	sub_topic = "cell_voltages"
-	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message), qos=0, retain=False)
+	ret = client.publish(main_topic + sub_topic, payload=json.dumps(message), qos=0, retain=False)
 	logging.debug(f"cell voltages: {message}")
 	cellsmin = min(cells1)          # min, max, delta
 	cellsmax = max(cells1)
@@ -175,7 +177,7 @@ def cellvolts1(data):			# process cell voltages
 	}
 	sub_topic = "cell_voltage_summary"
 	#really don't need this data. it can be inferred from other messages
-	ret = mqtt.publish(main_topic + sub_topic, payload=json.dumps(message1), qos=0, retain=False)
+	ret = client.publish(main_topic + sub_topic, payload=json.dumps(message1), qos=0, retain=False)
 	#print(f"cellvolts1 - message1: {message1}")
 
 class MyDelegate(DefaultDelegate):		    # notification responses
@@ -209,10 +211,11 @@ else:
 	logging.info(f"connected to {args.BLEaddress}")
 
 atexit.register(disconnect)
-mqtt = paho.Client()
-mqtt.on_connect = on_connect
-mqtt.on_disconnect = on_disconnect
-mqtt.connect(broker,port)     
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
+client.reconnect_delay_set(min_delay=1, max_delay=60)
+client.connect(host=broker,port=port, keepalive=29)     
 bms.setDelegate(MyDelegate())
 
 	# write empty data to 0x15 for notification request   --  address x03 handle for info & x04 handle for cell voltage
@@ -220,10 +223,10 @@ bms.setDelegate(MyDelegate())
 while True:
 	try:
 		try:
-			if mqtt.is_connected == False:
+			if mqtt_is_connected == 0:
 				logging.warning("MQTT disconnected, attempting to reconnect")
-				mqtt.connect(broker, port)
-			elif mqtt.is_connected == True:
+				client.reconnect()
+			elif mqtt_is_connected == 1:
 				logging.info("MQTT connected, proceeding")
 			else:
 				logging.info("MQTT unable to determine connection status")
