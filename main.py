@@ -3,6 +3,7 @@
 
 from bluepy.btle import Peripheral, DefaultDelegate, BTLEException
 import struct
+import time
 import argparse
 import json
 import time
@@ -214,6 +215,7 @@ client.on_disconnect = on_disconnect
 client.reconnect_delay_set(min_delay=1, max_delay=60)
 client.connect(host=broker,port=port, keepalive=29)   
 bms.setDelegate(MyDelegate())
+time.sleep(0.5)
 
 	# write empty data to 0x15 for notification request   --  address x03 handle for info & x04 handle for cell voltage
 	# using waitForNotifications(5) as less than 5 seconds has caused some missed notifications
