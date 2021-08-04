@@ -41,6 +41,7 @@ def disconnect():
 	logging.info("broker disconnected")
 
 def on_connect(client, userdata, flags, rc):
+	logging.info("connected to MQTT")
 	if rc==0:
 		global mqtt_is_connected
 		mqtt_is_connected = 1
