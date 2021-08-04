@@ -228,9 +228,9 @@ while True:
 				logging.warning("MQTT disconnected, attempting to reconnect")
 				client.reconnect()
 			elif mqtt_is_connected == 1:
-				logging.info("MQTT connected, proceeding")
+				logging.debug("MQTT connected, proceeding")
 			else:
-				logging.info("MQTT unable to determine connection status")
+				logging.debug("MQTT unable to determine connection status")
 		except:
 			logging.critical("unable to reconnect to MQTT, exiting")
 		logging.info("polling for data")
