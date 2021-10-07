@@ -56,6 +56,8 @@ class InfluxStore(MessageStore):
 			self.influx_client.write_points([influx_msg])
 		except requests.exceptions.ConnectionError as e:
 			self.logger.exception(e)
+		except Exception as e:
+			self.logger.exception(e)
 
 class MessageSource(object):
 
@@ -125,7 +127,7 @@ class MQTTSource(MessageSource):
 		self.client.on_message = on_message
 
 	def start(self):
-		print(f"starting mqtt on host: {self.host} and port: {self.port}")
+		logging.info(f"connecting to mqtt on host: {self.host} and port: {self.port}")
 		self.client.connect(self.host, self.port)
 		# Blocking call that processes network traffic, dispatches callbacks and
 		# handles reconnecting.
@@ -146,7 +148,7 @@ def main():
 	parser.add_argument('--influx-db', default="power", help='InfluxDB database')
 	parser.add_argument('--node-name', default='JDB-BMS', help='Sensor node name', action="append")
 	parser.add_argument('--stringify-values-for-measurements', required=False,	help='Force str() on measurements of the given name', action="append")
-	parser.add_argument('--verbose', help='Enable verbose output to stdout', default=True, action='store_true')
+	parser.add_argument('--verbose', help='Enable verbose output to stdout', default=False, action='store_true')
 	args = parser.parse_args()
 
 	if args.verbose:

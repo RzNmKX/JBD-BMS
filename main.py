@@ -26,7 +26,7 @@ meter = args.meter
 if args.verbose:
 	logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", stream=sys.stdout, level=logging.DEBUG)
 else:
-	logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", stream=sys.stdout, level=logging.INFO)
+	logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s", stream=sys.stdout, level=logging.WARN)
 
 main_topic = "JBD-BMS/"
 gauge ="data/bms/cell_info"
