@@ -1,0 +1,18 @@
+[Unit]
+Description=Python script to poll JBD-BMS data from LiFePO4 BMS
+After=syslog.target
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/bin/python3 /home/pi/JBD-BMS/main.py
+ExecStartPre=/bin/sleep 5
+Restart=always
+RestartSec=5s
+# Give the script some time to startup
+TimeoutSec=10
+
+[Install]
+WantedBy=multi-user.target
