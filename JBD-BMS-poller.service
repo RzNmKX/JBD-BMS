@@ -5,8 +5,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=root
-Group=root
+User=pi
+#Group=root
 ExecStart=/usr/bin/python3 /home/pi/JBD-BMS/main.py
 ExecStartPre=/bin/sleep 5
 Restart=always
