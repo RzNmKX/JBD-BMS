@@ -8,7 +8,7 @@ Type=simple
 User=pi
 #Group=pi
 ExecStart=/usr/bin/python3 /home/pi/JBD-BMS/forwarder.py
-ExecStartPre=/bin/sleep 5
+ExecStartPre=/bin/sleep 1
 Restart=always
 RestartSec=5s
 # Give the script some time to startup
